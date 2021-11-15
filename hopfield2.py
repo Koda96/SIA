@@ -22,20 +22,18 @@ def matrizPeso(x):
         w = npy.zeros([len(x),len(x)])
         for i in range(len(x)):
             for j in range (len(x)):
-                if i == j:
-                    w[i,j] == 0
-                else:
+                if i != j:
                     w[i,j] = x[i]*x[j]
                     w[j,i] = w[i,j]
     return w
         
-def ImagenaArray(file, size, threshold=145):
+def ImagenaMatriz(file, size, threshold=145):
     imagen = Image.open(file).convert(mode = "L") #Abrir la imagen y pasarla a blanco y negro
     imagen = imagen.resize(size)
     vectorimagen = npy.asarray(imagen,dtype=npy.uint8)
     x = npy.zeros(vectorimagen.shape,dtype=npy.float64)
     x[vectorimagen > threshold] = 1
-    x[x==0] = -1
+    x[vectorimagen <= threshold] = -1
     return x
 
 def ArrayaJPG(data, outFile = None):
@@ -47,23 +45,23 @@ def ArrayaJPG(data, outFile = None):
         imagen.save(outFile)
     return imagen
 
-def update(w,m1_vec, alpha=0.5,tiempo=100):
+def update(w, m1_vec, tiempo=100):
     for s in range(tiempo):
         m = len(m1_vec)
         i = random.randint(0,m-1)
-        u = npy.dot(w[i][:],m1_vec) - alpha
+        u = npy.dot(w[i][:],m1_vec)
         if u > 0:
             m1_vec[i] = 1
         elif u < 0:
             m1_vec[i] = -1
     return m1_vec
 
-def hopfield(entradas, pruebas, alpha = 0.5, tiempo = 1000, size=(100,67), threshold = 60, directorio = None):
+def hopfield(entradas, pruebas, tiempo = 1000, size=(2,2), threshold = 60, directorio = None):
     print ("Creando matriz de peso")
     archivos = 0
     for path in entradas:
         print(path)
-        x = ImagenaArray(file = path, size = size, threshold=threshold)
+        x = ImagenaMatriz(file = path, size = size, threshold=threshold)
         x_vec = MatrizaVector(x)
         print (len(x_vec))
         if archivos == 0:
@@ -79,11 +77,10 @@ def hopfield(entradas, pruebas, alpha = 0.5, tiempo = 1000, size=(100,67), thres
     c = 0
 
     for path in pruebas:
-        m1 = ImagenaArray(file = path, size = size, threshold=threshold)
+        m1 = ImagenaMatriz(file = path, size = size, threshold=threshold)
         oshape = m1.shape
-        m1_img = ArrayaJPG(m1)
         m1_vec = MatrizaVector(m1)
-        m1_vec_aux = update(w=w, m1_vec=m1_vec, alpha=alpha, tiempo=tiempo)
+        m1_vec_aux = update(w=w, m1_vec=m1_vec, tiempo=tiempo)
         m1_vec_aux = m1_vec_aux.reshape(oshape)
         if directorio is not None:
             outfile = directorio+"/after"+str(c)+".jpeg"
@@ -106,4 +103,4 @@ for i in os.listdir(path):
     if re.match(r'[0-9a-zA-Z-_]*.jp[e]*g',i):
         dirpruebas.append(path+i)
 
-hopfield(entradas=direntrenamiento, pruebas=dirpruebas, alpha=0.5, tiempo=20000, size=(100,67), threshold= 60, directorio=directorio)
+hopfield(entradas=direntrenamiento, pruebas=dirpruebas, tiempo=20000, size=(2,2), threshold= 60, directorio=directorio)
